@@ -405,8 +405,10 @@ function createPullRequest(inputs) {
             core.startGroup('Determining the base and head repositories');
             const baseRemote = gitConfigHelper.getGitRemote();
             // Init the GitHub clients
-            const ghBranch = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.branchToken);
-            const ghPull = new github_helper_1.GitHubHelper(baseRemote.hostname, inputs.token);
+            const apiUrl = yield github_helper_1.GitHubHelper.determineApiUrl(baseRemote.hostname);
+            core.info(`Using API base URL: ${apiUrl}`);
+            const ghBranch = new github_helper_1.GitHubHelper(apiUrl, inputs.branchToken);
+            const ghPull = new github_helper_1.GitHubHelper(apiUrl, inputs.token);
             // Determine the head repository; the target for the pull request branch
             const branchRemoteName = inputs.pushToFork ? 'fork' : 'origin';
             const branchRepository = inputs.pushToFork
@@ -1278,19 +1280,42 @@ const ERROR_PR_REVIEW_TOKEN_SCOPE = 'Validation Failed: "Could not resolve to a 
 const ERROR_PR_FORK_COLLAB = `Fork collab can't be granted by someone without permission`;
 const blobCreationLimit = (0, p_limit_1.default)(8);
 class GitHubHelper {
-    constructor(githubServerHostname, token) {
+    constructor(apiUrl, token) {
         const options = {};
         if (token) {
             options.auth = `${token}`;
         }
-        if (githubServerHostname !== 'github.com') {
-            options.baseUrl = `https://${githubServerHostname}/api/v1`;
-        }
-        else {
-            options.baseUrl = 'https://api.github.com';
-        }
+        options.baseUrl = apiUrl;
         options.throttle = octokit_client_1.throttleOptions;
         this.octokit = new octokit_client_1.Octokit(options);
+    }
+    static determineApiUrl(hostname) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (hostname === 'github.com') {
+                return "https://api.github.com";
+            }
+            const baseUrl = `https://${hostname}`;
+            const possiblePaths = ['/api/v4/version', '/api/forgejo/v1/version', '/api/v1/version'];
+            for (const path of possiblePaths) {
+                try {
+                    const url = `${baseUrl}${path}`;
+                    const response = yield fetch(url, { method: 'GET', redirect: 'manual' }); // GitLab redirects
+                    // invalid API paths
+                    // to login prompt
+                    // which returns 200
+                    const contentType = response.headers.get('Content-Type') || '';
+                    if ((response.ok || [401, 403].includes(response.status)) && // We might get 401, 403
+                        // as we're unauthorised
+                        contentType.includes('application/json')) {
+                        return path.includes('/version') ? url.replace('/version', '') : url;
+                    }
+                }
+                catch (error) {
+                    // Ignore errors and try the next path
+                }
+            }
+            throw new Error(`Unable to determine API base URL for hostname: ${hostname}`);
+        });
     }
     parseRepository(repository) {
         const [owner, repo] = repository.split('/');
