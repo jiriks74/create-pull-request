@@ -1292,10 +1292,14 @@ class GitHubHelper {
     static determineApiUrl(hostname) {
         return __awaiter(this, void 0, void 0, function* () {
             if (hostname === 'github.com') {
-                return "https://api.github.com";
+                return 'https://api.github.com';
             }
             const baseUrl = `https://${hostname}`;
-            const possiblePaths = ['/api/v4/version', '/api/forgejo/v1/version', '/api/v1/version'];
+            const possiblePaths = [
+                '/api/v4/version',
+                '/api/forgejo/v1/version',
+                '/api/v1/version'
+            ];
             for (const path of possiblePaths) {
                 try {
                     const url = `${baseUrl}${path}`;
