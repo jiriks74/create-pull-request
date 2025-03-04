@@ -46,42 +46,47 @@ export class GitHubHelper {
     if (token) {
       options.auth = `${token}`
     }
-    options.baseUrl = apiUrl;
+    options.baseUrl = apiUrl
     options.throttle = throttleOptions
     this.octokit = new Octokit(options)
   }
 
   static async determineApiUrl(hostname: string): Promise<string> {
     if (hostname === 'github.com') {
-      return "https://api.github.com";
+      return 'https://api.github.com'
     }
 
-    const baseUrl = `https://${hostname}`;
-    const possiblePaths = ['/api/v4/version', '/api/forgejo/v1/version', '/api/v1/version'];
+    const baseUrl = `https://${hostname}`
+    const possiblePaths = [
+      '/api/v4/version',
+      '/api/forgejo/v1/version',
+      '/api/v1/version'
+    ]
 
     for (const path of possiblePaths) {
       try {
-        const url = `${baseUrl}${path}`;
-        const response = await fetch(url, { method: 'GET', redirect: 'manual' }); // GitLab redirects
-                                                                                  // invalid API paths
-                                                                                  // to login prompt
-                                                                                  // which returns 200
+        const url = `${baseUrl}${path}`
+        const response = await fetch(url, {method: 'GET', redirect: 'manual'}) // GitLab redirects
+        // invalid API paths
+        // to login prompt
+        // which returns 200
 
-        const contentType = response.headers.get('Content-Type') || '';
+        const contentType = response.headers.get('Content-Type') || ''
         if (
           (response.ok || [401, 403].includes(response.status)) && // We might get 401, 403
-                                                                   // as we're unauthorised
+          // as we're unauthorised
           contentType.includes('application/json')
         ) {
-          return path.includes('/version') ? url.replace('/version', '') : url;
+          return path.includes('/version') ? url.replace('/version', '') : url
         }
-
       } catch (error) {
-          // Ignore errors and try the next path
+        // Ignore errors and try the next path
       }
     }
 
-    throw new Error(`Unable to determine API base URL for hostname: ${hostname}`);
+    throw new Error(
+      `Unable to determine API base URL for hostname: ${hostname}`
+    )
   }
 
   private parseRepository(repository: string): Repository {

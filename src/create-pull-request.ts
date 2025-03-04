@@ -51,8 +51,8 @@ export async function createPullRequest(inputs: Inputs): Promise<void> {
     core.startGroup('Determining the base and head repositories')
     const baseRemote = gitConfigHelper.getGitRemote()
     // Init the GitHub clients
-    const apiUrl = await GitHubHelper.determineApiUrl(baseRemote.hostname);
-    core.info(`Using API base URL: ${apiUrl}`);
+    const apiUrl = await GitHubHelper.determineApiUrl(baseRemote.hostname)
+    core.info(`Using API base URL: ${apiUrl}`)
     const ghBranch = new GitHubHelper(apiUrl, inputs.branchToken)
     const ghPull = new GitHubHelper(apiUrl, inputs.token)
     // Determine the head repository; the target for the pull request branch
