@@ -52,6 +52,30 @@ export function getRemoteUrl(
     : `git@${hostname}:${repository}.git`
 }
 
+interface PullHead {
+  label: string
+  repo: {full_name: string} | null
+}
+
+export function isPullRequestFrom(
+  pull: {head: PullHead},
+  headBranch: string,
+  headRepository: string
+): boolean {
+  if (pull.head.label === headBranch) return true
+
+  const branch = headBranch.split(':', 2)[1]
+  if (pull.head.repo === null) return false
+  if (
+    pull.head.repo.full_name === headRepository &&
+    pull.head.label === branch
+  ) {
+    return true
+  }
+
+  return false
+}
+
 interface ApiProbeResponse {
   ok: boolean
   headers: {

@@ -73,6 +73,42 @@ describe('utils tests', () => {
     )
   })
 
+  test('isPullRequestFrom supports GitHub and Forgejo pull responses', async () => {
+    const headBranch = 'owner:feature'
+    const headRepository = 'owner/repository'
+    const pull = (label: string, repository: string | null) => ({
+      head: {
+        label,
+        repo: repository ? {full_name: repository} : null
+      }
+    })
+
+    expect(
+      utils.isPullRequestFrom(
+        pull(headBranch, headRepository),
+        headBranch,
+        headRepository
+      )
+    ).toBe(true)
+    expect(
+      utils.isPullRequestFrom(
+        pull('feature', headRepository),
+        headBranch,
+        headRepository
+      )
+    ).toBe(true)
+    expect(
+      utils.isPullRequestFrom(
+        pull('feature', 'other/repository'),
+        headBranch,
+        headRepository
+      )
+    ).toBe(false)
+    expect(
+      utils.isPullRequestFrom(pull('feature', null), headBranch, headRepository)
+    ).toBe(false)
+  })
+
   test('determineApiBaseUrl uses the API URL supplied by the runner', async () => {
     process.env['FORGEJO_API_URL'] = 'https://forgejo.example.com/api/v1/'
     process.env['GITHUB_API_URL'] = 'https://forgejo.example.com/api/v1'
