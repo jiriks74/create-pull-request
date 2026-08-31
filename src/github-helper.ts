@@ -68,6 +68,7 @@ export class GitHubHelper {
 
   private async getPullNumber(
     baseRepository: string,
+    headRepository: string,
     headBranch: string,
     baseBranch: string
   ): Promise<number> {
@@ -91,8 +92,8 @@ export class GitHubHelper {
           base: baseBranch
         }
       )) {
-        const existingPull = response.data.find(
-          pull => pull.head.label === headBranch
+        const existingPull = response.data.find(pull =>
+          utils.isPullRequestFrom(pull, headBranch, headRepository)
         )
         if (existingPull !== undefined) {
           pullNumber = existingPull.number
@@ -165,6 +166,7 @@ export class GitHubHelper {
     core.info(`Fetching existing pull request`)
     const pullNumber = await this.getPullNumber(
       baseRepository,
+      headRepository,
       headBranch,
       inputs.base
     )
