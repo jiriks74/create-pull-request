@@ -1403,7 +1403,7 @@ class GitHubHelper {
             repo: repo
         };
     }
-    getPullNumber(baseRepository, headBranch, baseBranch) {
+    getPullNumber(baseRepository, headRepository, headBranch, baseBranch) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
             const { data: pulls } = yield this.octokit.rest.pulls.list(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { state: 'open', head: headBranch, base: baseBranch }));
@@ -1416,7 +1416,7 @@ class GitHubHelper {
                         _c = _f.value;
                         _d = false;
                         const response = _c;
-                        const existingPull = response.data.find(pull => pull.head.label === headBranch);
+                        const existingPull = response.data.find(pull => utils.isPullRequestFrom(pull, headBranch, headRepository));
                         if (existingPull !== undefined) {
                             pullNumber = existingPull.number;
                             break;
@@ -1474,7 +1474,7 @@ class GitHubHelper {
             }
             // Update the pull request that exists for this branch and base
             core.info(`Fetching existing pull request`);
-            const pullNumber = yield this.getPullNumber(baseRepository, headBranch, inputs.base);
+            const pullNumber = yield this.getPullNumber(baseRepository, headRepository, headBranch, inputs.base);
             core.info(`Attempting update of pull request`);
             const { data: pull } = yield this.octokit.rest.pulls.update(Object.assign(Object.assign({}, this.parseRepository(baseRepository)), { pull_number: pullNumber, title: inputs.title, body: inputs.body }));
             core.info(`Updated pull request #${pull.number} (${headBranch} => ${inputs.base})`);
@@ -1925,6 +1925,7 @@ exports.getStringAsArray = getStringAsArray;
 exports.stripOrgPrefixFromTeams = stripOrgPrefixFromTeams;
 exports.getRepoPath = getRepoPath;
 exports.getRemoteUrl = getRemoteUrl;
+exports.isPullRequestFrom = isPullRequestFrom;
 exports.determineApiBaseUrl = determineApiBaseUrl;
 exports.secondsSinceEpoch = secondsSinceEpoch;
 exports.randomString = randomString;
@@ -1972,6 +1973,18 @@ function getRemoteUrl(protocol, hostname, repository) {
     return protocol == 'HTTPS'
         ? `https://${hostname}/${repository}`
         : `git@${hostname}:${repository}.git`;
+}
+function isPullRequestFrom(pull, headBranch, headRepository) {
+    if (pull.head.label === headBranch)
+        return true;
+    const branch = headBranch.split(':', 2)[1];
+    if (pull.head.repo === null)
+        return false;
+    if (pull.head.repo.full_name === headRepository &&
+        pull.head.label === branch) {
+        return true;
+    }
+    return false;
 }
 function determineApiBaseUrl(hostname_1) {
     return __awaiter(this, arguments, void 0, function* (hostname, probe = proxy_1.fetch) {
